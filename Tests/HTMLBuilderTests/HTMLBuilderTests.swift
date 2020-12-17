@@ -101,6 +101,32 @@ final class HTMLBuilderTests: XCTestCase {
         let httpEquiv = Element.metadata(httpEquivalent: "refresh", content: "30")
         XCTAssertEqual(httpEquiv.renderHTML(), "<meta content=\"30\" http-equiv=\"refresh\">")
     }
+    func testEquatable() throws {
+        let element1 = Element.html(head: {
+            Element.cssLink(Self.testURL)
+        }, body: {
+            Element.division {
+                Element.button("hello")
+                "world"
+                Element.button("hello")
+            }
+            Element.paragraph { "paragraph" }
+        })
+        let element2 = Element.html(head: {
+            Element.cssLink(Self.testURL)
+        }, body: {
+            Element.division {
+                Element.button("hello")
+                "world"
+                Element.button("hello")
+            }
+            Element.paragraph { "paragraph" }
+        })
+        
+        XCTAssertTrue(element1.isEqual(to: element2))
+        XCTAssertFalse(element1.isEqual(to: "hello"))
+        XCTAssertFalse(element1.isEqual(to: Element.division(content: { "hello" })))
+    }
 
     static var allTests = [
         ("testExample", testRendererMultiple),

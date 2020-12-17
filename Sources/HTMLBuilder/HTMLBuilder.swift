@@ -3,6 +3,7 @@ import libxml2
 
 public protocol Node: XMLNodeConvertible {
     func renderHTML() -> String
+    func isEqual(to other: Node) -> Bool
 }
 public protocol XMLNodeConvertible {
     func asXMLNode() -> xmlNodePtr
@@ -39,6 +40,17 @@ public struct Element: Node {
         }
         return node
     }
+    public func isEqual(to other: Node) -> Bool {
+        if let other = other as? Element {
+            if self.name != other.name { return false }
+            if self.attributes != other.attributes { return false }
+            if self.children.count != other.children.count { return false }
+            if zip(self.children, other.children).allSatisfy({ $0.0.isEqual(to: $0.1) }) == false { return false }
+            return true
+        }
+        return false
+    }
+
 
     public init(name: String, attributes: [AttributeName: String] = [:], @NodeBuilder children: () throws -> [Node]) rethrows {
         self.name = name
@@ -126,6 +138,9 @@ extension String: Node {
         guard let node = xmlNewText(self) else { fatalError("node allocation failed") }
         return node
     }
+    public func isEqual(to other: Node) -> Bool {
+        return self == (other as? String)
+    }
 }
 
 public struct RawHTML: Node {
@@ -133,8 +148,10 @@ public struct RawHTML: Node {
         case invalidHTML
         case noRootElement
     }
+    var rawValue: String
     var node: xmlNodePtr
     public init(_ rawValue: String) throws {
+        self.rawValue = rawValue
         let data = Data(rawValue.utf8)
         let doc = try data.withUnsafeBytes { (buffer: UnsafeRawBufferPointer) throws -> xmlDocPtr in
             let options = Int32(HTML_PARSE_RECOVER.rawValue | HTML_PARSE_NONET.rawValue | HTML_PARSE_NOIMPLIED.rawValue)
@@ -150,6 +167,9 @@ public struct RawHTML: Node {
     }
     public func asXMLNode() -> xmlNodePtr {
         return self.node
+    }
+    public func isEqual(to other: Node) -> Bool {
+        return self.rawValue == (other as? RawHTML)?.rawValue
     }
 }
 
