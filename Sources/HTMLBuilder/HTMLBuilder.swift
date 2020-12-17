@@ -23,6 +23,12 @@ public extension Node {
         }
         return String(data: resultData, encoding: .utf8)?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
     }
+    func isEqual(to other: Node?) -> Bool {
+        if let other = other {
+            return self.isEqual(to: other)
+        }
+        return false
+    }
 }
 
 public struct Element: Node {

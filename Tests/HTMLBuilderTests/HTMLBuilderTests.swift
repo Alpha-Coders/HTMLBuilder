@@ -126,6 +126,8 @@ final class HTMLBuilderTests: XCTestCase {
         XCTAssertTrue(element1.isEqual(to: element2))
         XCTAssertFalse(element1.isEqual(to: "hello"))
         XCTAssertFalse(element1.isEqual(to: Element.division(content: { "hello" })))
+        XCTAssertFalse(element1.isEqual(to: nil))
+
     }
 
     static var allTests = [
