@@ -91,6 +91,16 @@ final class HTMLBuilderTests: XCTestCase {
         }
         XCTAssertEqual(element.renderHTML(), "<div><p>hello</p></div>")
     }
+    func testMeta() throws {
+        let charset = Element.metadata(charset: "UTF-8")
+        XCTAssertEqual(charset.renderHTML(), "<meta charset=\"UTF-8\">")
+        
+        let name = Element.metadata(name: "keywords", content: "HTML, CSS, JavaScript")
+        XCTAssertEqual(name.renderHTML(), "<meta content=\"HTML, CSS, JavaScript\" name=\"keywords\">")
+        
+        let httpEquiv = Element.metadata(httpEquivalent: "refresh", content: "30")
+        XCTAssertEqual(httpEquiv.renderHTML(), "<meta content=\"30\" http-equiv=\"refresh\">")
+    }
 
     static var allTests = [
         ("testExample", testRendererMultiple),

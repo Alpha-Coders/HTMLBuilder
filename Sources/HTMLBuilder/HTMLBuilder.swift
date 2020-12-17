@@ -110,6 +110,15 @@ extension Element {
             script
         }
     }
+    public static func metadata(name: String, content: String) -> Self {
+        Self.init(name: "meta", attributes: ["name": name, "content": content])
+    }
+    public static func metadata(httpEquivalent: String, content: String) -> Self {
+        Self.init(name: "meta", attributes: ["http-equiv": httpEquivalent, "content": content])
+    }
+    public static func metadata(charset: String) -> Self {
+        Self.init(name: "meta", attributes: ["charset": charset])
+    }
 }
 
 extension String: Node {
@@ -129,7 +138,8 @@ public struct RawHTML: Node {
         let data = Data(rawValue.utf8)
         let doc = try data.withUnsafeBytes { (buffer: UnsafeRawBufferPointer) throws -> xmlDocPtr in
             let options = Int32(HTML_PARSE_RECOVER.rawValue | HTML_PARSE_NONET.rawValue | HTML_PARSE_NOIMPLIED.rawValue)
-            if let doc = htmlReadMemory(buffer.baseAddress?.assumingMemoryBound(to: Int8.self), Int32(buffer.count), nil, "UTF-8", options) {
+            let pointer = buffer.baseAddress?.assumingMemoryBound(to: Int8.self)
+            if let doc = htmlReadMemory(pointer, Int32(buffer.count), nil, "UTF-8", options) {
                 return doc
             } else {
                 throw RawHTMLError.invalidHTML
