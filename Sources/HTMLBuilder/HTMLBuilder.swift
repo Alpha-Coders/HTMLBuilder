@@ -77,7 +77,7 @@ extension Element {
         static let hypertextReference = AttributeName(rawValue: "href")
         static let type = AttributeName(rawValue: "type")
         static let source = AttributeName(rawValue: "src")
-        static let relationship = AttributeName(rawValue: "ref")
+        static let relationship = AttributeName(rawValue: "rel")
 
 
         public init(rawValue: String) {
