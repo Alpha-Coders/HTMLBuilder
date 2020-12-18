@@ -106,6 +106,12 @@ final class HTMLBuilderTests: XCTestCase {
             try RawHTML(rawHTML)
         }
     }
+    func testRawMultipleAttributes() throws {
+        let raw = """
+        <div a="1" b="2" c="3" d></div>
+        """
+        XCTAssertEqual(try RawHTML(raw).nodes[0].renderHTML(), raw)
+    }
     func testMeta() throws {
         let charset = Element.metadata(charset: "UTF-8")
         XCTAssertEqual(charset.renderHTML(), "<meta charset=\"UTF-8\">")

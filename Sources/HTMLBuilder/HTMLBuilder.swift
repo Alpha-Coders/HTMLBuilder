@@ -33,7 +33,7 @@ public extension Node {
 
 public struct Element: Node {
     public var name: String
-    public var attributes: [AttributeName: String]
+    public var attributes: [AttributeName: AttributeValue]
     public var children: [Node]
     
     public func asXMLNode() -> xmlNodePtr {
@@ -57,15 +57,15 @@ public struct Element: Node {
         return false
     }
 
-    public init(name: String, attributes: [AttributeName: String], children: [Node]) {
+    public init(name: String, attributes: [AttributeName: AttributeValue], children: [Node]) {
         self.name = name
         self.attributes = attributes
         self.children = children
     }
-    public init(name: String, attributes: [AttributeName: String] = [:], @NodeBuilder children: () throws -> [Node]) rethrows {
+    public init(name: String, attributes: [AttributeName: AttributeValue] = [:], @NodeBuilder children: () throws -> [Node]) rethrows {
         self.init(name: name, attributes: attributes, children: try children())
     }
-    public init(name: String, attributes: [AttributeName: String] = [:]) {
+    public init(name: String, attributes: [AttributeName: AttributeValue] = [:]) {
         self.init(name: name, attributes: attributes, children: [])
     }
 }
@@ -87,6 +87,7 @@ extension Element {
             self.init(rawValue: value)
         }
     }
+    public typealias AttributeValue = String?
 }
 
 extension Element {
@@ -192,15 +193,14 @@ public class RawHTML {
             switch child.pointee.type {
             case XML_ELEMENT_NODE:
                 let name = String(xmlString: child.pointee.name) ?? ""
-                var attributes: [Element.AttributeName: String] = [:]
+                var attributes: [Element.AttributeName: String?] = [:]
                 var currentAttribute = child.withMemoryRebound(to: xmlElement.self, capacity: 1) { $0.pointee.attributes }
                 while let attribute = currentAttribute {
-                    if let name = String(xmlString: attribute.pointee.name),
-                       let content = attribute.withMemoryRebound(to: xmlNode.self, capacity: 1, { xmlNodeGetContent($0) }) {
-                        attributes[.init(rawValue: name)] = String(xmlString: content)
-                        xmlFree(content)
+                    if let attrName = String(xmlString: attribute.pointee.name) {
+                        let content = attribute.pointee.children?.pointee.content
+                        attributes[.init(rawValue: attrName)] = .some(content.flatMap(String.init(xmlString:)))
                     }
-                    currentAttribute = currentAttribute?.pointee.nexth
+                    currentAttribute = UnsafeMutableRawPointer(attribute.pointee.next)?.bindMemory(to: xmlAttribute.self, capacity: 1)
                 }
                 let children = Self.nodes(from: child)
                 result.append(Element(name: name, attributes: attributes, children: children))
