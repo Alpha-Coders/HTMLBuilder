@@ -161,7 +161,7 @@ public class RawHTML {
     }
     public init(data: Data, encoding: String.Encoding?) throws {
         
-        let options = Int32(HTML_PARSE_RECOVER.rawValue | HTML_PARSE_NONET.rawValue)
+        let options = Int32(HTML_PARSE_RECOVER.rawValue | HTML_PARSE_NONET.rawValue | HTML_PARSE_NOERROR.rawValue | HTML_PARSE_NOWARNING.rawValue)
          
         let encodingValue = encoding.map { (encoding) -> String in
             switch encoding {

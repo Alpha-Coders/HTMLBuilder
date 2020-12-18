@@ -75,7 +75,7 @@ final class HTMLBuilderTests: XCTestCase {
             Element.paragraph { "paragraph" }
         })
         let expected = """
-        <html><head><link href="http://test.fr" ref="stylesheet" type="text/css"></head><body><div><button type="button">hello</button>world<button type="button">hello</button></div><p>paragraph</p></body></html>
+        <html><head><link href="http://test.fr" rel="stylesheet" type="text/css"></head><body><div><button type="button">hello</button>world<button type="button">hello</button></div><p>paragraph</p></body></html>
         """
         XCTAssertEqual(html.renderHTML(), expected)
     }
@@ -96,6 +96,15 @@ final class HTMLBuilderTests: XCTestCase {
             try RawHTML("<p>hello</p><img src=\"http://test.fr\"><figure></figure>")
         }
         XCTAssertEqual(element.renderHTML(), "<div><p>hello</p><img src=\"http://test.fr\"><figure></figure></div>")
+    }
+    func testRawHTMLWithError() throws {
+        let rawHTML = """
+        <figure class="kg-card kg-gallery-card kg-width-wide"><div class="kg-gallery-container"><div class="kg-gallery-row"><div class="kg-gallery-image"><img src="http://localhost:2368/content/images/2020/11/Simulator-Screen-Shot---iPad--7th-generation----2020-10-01-at-18.27.03.png" width="2000" height="1500" alt srcset="http://localhost:2368/content/images/size/w600/2020/11/Simulator-Screen-Shot---iPad--7th-generation----2020-10-01-at-18.27.03.png 600w, http://localhost:2368/content/images/size/w1000/2020/11/Simulator-Screen-Shot---iPad--7th-generation----2020-10-01-at-18.27.03.png 1000w, http://localhost:2368/content/images/size/w1600/2020/11/Simulator-Screen-Shot---iPad--7th-generation----2020-10-01-at-18.27.03.png 1600w, http://localhost:2368/content/images/2020/11/Simulator-Screen-Shot---iPad--7th-generation----2020-10-01-at-18.27.03.png 2160w" sizes="(min-width: 720px) 720px"></div><div class="kg-gallery-image"><img src="http://localhost:2368/content/images/2020/11/Simulator-Screen-Shot---iPad--8th-generation----2020-09-29-at-10.44.17.png" width="2000" height="1500" alt srcset="http://localhost:2368/content/images/size/w600/2020/11/Simulator-Screen-Shot---iPad--8th-generation----2020-09-29-at-10.44.17.png 600w, http://localhost:2368/content/images/size/w1000/2020/11/Simulator-Screen-Shot---iPad--8th-generation----2020-09-29-at-10.44.17.png 1000w, http://localhost:2368/content/images/size/w1600/2020/11/Simulator-Screen-Shot---iPad--8th-generation----2020-09-29-at-10.44.17.png 1600w, http://localhost:2368/content/images/2020/11/Simulator-Screen-Shot---iPad--8th-generation----2020-09-29-at-10.44.17.png 2160w" sizes="(min-width: 720px) 720px"></div><div class="kg-gallery-image"><img src="http://localhost:2368/content/images/2020/11/Simulator-Screen-Shot---iPad--8th-generation----2020-09-24-at-11.43.37.png" width="2000" height="1500" alt srcset="http://localhost:2368/content/images/size/w600/2020/11/Simulator-Screen-Shot---iPad--8th-generation----2020-09-24-at-11.43.37.png 600w, http://localhost:2368/content/images/size/w1000/2020/11/Simulator-Screen-Shot---iPad--8th-generation----2020-09-24-at-11.43.37.png 1000w, http://localhost:2368/content/images/size/w1600/2020/11/Simulator-Screen-Shot---iPad--8th-generation----2020-09-24-at-11.43.37.png 1600w, http://localhost:2368/content/images/2020/11/Simulator-Screen-Shot---iPad--8th-generation----2020-09-24-at-11.43.37.png 2160w" sizes="(min-width: 720px) 720px"></div></div></div></figure>
+        """
+        
+        _ = try Element.division {
+            try RawHTML(rawHTML)
+        }
     }
     func testMeta() throws {
         let charset = Element.metadata(charset: "UTF-8")
