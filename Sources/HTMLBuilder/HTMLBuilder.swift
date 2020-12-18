@@ -57,14 +57,16 @@ public struct Element: Node {
         return false
     }
 
-
-    public init(name: String, attributes: [AttributeName: String] = [:], @NodeBuilder children: () throws -> [Node]) rethrows {
+    public init(name: String, attributes: [AttributeName: String], children: [Node]) {
         self.name = name
         self.attributes = attributes
-        self.children = try children()
+        self.children = children
+    }
+    public init(name: String, attributes: [AttributeName: String] = [:], @NodeBuilder children: () throws -> [Node]) rethrows {
+        self.init(name: name, attributes: attributes, children: try children())
     }
     public init(name: String, attributes: [AttributeName: String] = [:]) {
-        self.init(name: name, attributes: attributes, children: { return [] })
+        self.init(name: name, attributes: attributes, children: [])
     }
 }
 extension Element {
@@ -149,33 +151,92 @@ extension String: Node {
     }
 }
 
-public struct RawHTML: Node {
-    enum RawHTMLError: Error {
+public class RawHTML {
+    enum Error: Swift.Error {
         case invalidHTML
-        case noRootElement
     }
-    var rawValue: String
-    var node: xmlNodePtr
-    public init(_ rawValue: String) throws {
-        self.rawValue = rawValue
-        let data = Data(rawValue.utf8)
-        let doc = try data.withUnsafeBytes { (buffer: UnsafeRawBufferPointer) throws -> xmlDocPtr in
-            let options = Int32(HTML_PARSE_RECOVER.rawValue | HTML_PARSE_NONET.rawValue | HTML_PARSE_NOIMPLIED.rawValue)
-            let pointer = buffer.baseAddress?.assumingMemoryBound(to: Int8.self)
-            if let doc = htmlReadMemory(pointer, Int32(buffer.count), nil, "UTF-8", options) {
-                return doc
-            } else {
-                throw RawHTMLError.invalidHTML
+    private let document: htmlDocPtr
+    public convenience init(_ rawValue: String) throws {
+        try self.init(data: Data(rawValue.utf8), encoding: .utf8)
+    }
+    public init(data: Data, encoding: String.Encoding?) throws {
+        
+        let options = Int32(HTML_PARSE_RECOVER.rawValue | HTML_PARSE_NONET.rawValue)
+         
+        let encodingValue = encoding.map { (encoding) -> String in
+            switch encoding {
+            case .utf8: return "UTF-8"
+            default:
+                fatalError("unsupported encoding")
             }
         }
-        guard let node = xmlDocGetRootElement(doc) else { throw RawHTMLError.noRootElement }
-        self.node = node
+        self.document = try data.withUnsafeBytes { buffer -> htmlDocPtr in
+            let pointer = buffer.baseAddress?.assumingMemoryBound(to: Int8.self)
+            if let doc = htmlReadMemory(pointer, Int32(buffer.count), nil, encodingValue, options) {
+                return doc
+            } else {
+                throw Error.invalidHTML
+            }
+        }
+        
     }
-    public func asXMLNode() -> xmlNodePtr {
-        return self.node
+    
+    public var nodes: [Node] {
+        guard let root = xmlDocGetRootElement(self.document) else { return [] }
+        guard let body = Self.enumerateChildren(of: root).first(where: { String(xmlString: $0.pointee.name) == "body" }) else { return [] }
+        return Self.nodes(from: body)
     }
-    public func isEqual(to other: Node) -> Bool {
-        return self.rawValue == (other as? RawHTML)?.rawValue
+    private static func nodes(from parent: xmlNodePtr) -> [Node] {
+        var result: [Node] = []
+        for child in Self.enumerateChildren(of: parent) {
+            switch child.pointee.type {
+            case XML_ELEMENT_NODE:
+                let name = String(xmlString: child.pointee.name) ?? ""
+                var attributes: [Element.AttributeName: String] = [:]
+                var currentAttribute = child.withMemoryRebound(to: xmlElement.self, capacity: 1) { $0.pointee.attributes }
+                while let attribute = currentAttribute {
+                    if let name = String(xmlString: attribute.pointee.name),
+                       let content = attribute.withMemoryRebound(to: xmlNode.self, capacity: 1, { xmlNodeGetContent($0) }) {
+                        attributes[.init(rawValue: name)] = String(xmlString: content)
+                        xmlFree(content)
+                    }
+                    currentAttribute = currentAttribute?.pointee.nexth
+                }
+                let children = Self.nodes(from: child)
+                result.append(Element(name: name, attributes: attributes, children: children))
+            case XML_TEXT_NODE:
+                let content = xmlNodeGetContent(child)
+                guard let text = content.flatMap(String.init(xmlString:)) else { break }
+                xmlFree(content)
+                result.append(text)
+            default: break
+            }
+        }
+        return result
+    }
+    private static func enumerateChildren(of parent: xmlNodePtr) -> AnySequence<xmlNodePtr> {
+        return AnySequence { () -> AnyIterator<xmlNodePtr> in
+            var current = parent.pointee.children
+            return AnyIterator {
+                let result = current
+                current = current?.pointee.next
+                return result
+            }
+        }
+    }
+    
+    deinit {
+        xmlFreeDoc(self.document)
+    }
+}
+
+private extension String {
+    init?(xmlString: UnsafeMutablePointer<xmlChar>) {
+        self.init(cString: UnsafePointer(xmlString))
+    }
+    init?(xmlString: UnsafePointer<xmlChar>) {
+        let pointer = UnsafeRawPointer(xmlString).assumingMemoryBound(to: CChar.self)
+        self.init(cString: pointer, encoding: .utf8)
     }
 }
 
@@ -198,6 +259,9 @@ public struct ForEach<T> {
     }
     public static func buildExpression<T>(_ expression: ForEach<T>) -> [Node] {
         return expression.values.map(expression.content)
+    }
+    public static func buildExpression(_ expression: RawHTML) -> [Node] {
+        return expression.nodes
     }
     public static func buildBlock(_ nodes: [Node]...) -> [Node] {
         return nodes.flatMap { $0 }
