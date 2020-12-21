@@ -148,9 +148,56 @@ final class HTMLBuilderTests: XCTestCase {
         XCTAssertFalse(element1.isEqual(to: "hello"))
         XCTAssertFalse(element1.isEqual(to: Element.division(content: { "hello" })))
         XCTAssertFalse(element1.isEqual(to: nil))
-
+        
     }
-
+    func testDocExamples() throws {
+        let tree = Element.html(head: {
+            Element.metadata(charset: "UTF-8")
+            Element(name: "title") { "Hello world" }
+        }, body: {
+            Element.division {
+                Element(name: "h1") { "Hello" }
+                Element.paragraph { "Lorem ipsum dolor sit amet, <consectetur> adipiscing elit, sed & eiusmod." }
+            }
+        })
+        print(tree.renderHTML())
+        
+        let cond1 = true
+        let cond2 = false
+        let elements = ["Lorem", "ipsum"]
+        let treeControlFlow = Element.html(head: {
+            Element.metadata(charset: "UTF-8")
+            Element(name: "title") { "Hello world" }
+        }, body: {
+            Element.division {
+                if cond1 {
+                    Element(name: "h1") { "Hello" }
+                }
+                if cond2 {
+                    Element(name: "h1") { "Hello" }
+                } else {
+                    Element(name: "h1") { "world" }
+                }
+                ForEach(elements) { el in
+                    Element.paragraph { el }
+                }
+            }
+        })
+        print(treeControlFlow.renderHTML())
+        
+        let rawHTMLTree = try Element.division {
+            try RawHTML("""
+                <h1>hello world</h1>
+                <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit</p>
+                """)
+        }
+        print(rawHTMLTree.renderHTML())
+        
+        let modifierTree = Element.division {
+            Element.paragraph { "Hello world" }.identifier("title")
+        }.class("container")
+        print(modifierTree.renderHTML())
+    }
     static var allTests = [
         ("testExample", testRendererMultiple),
         ("testRendererSingle", testRendererSingle),
