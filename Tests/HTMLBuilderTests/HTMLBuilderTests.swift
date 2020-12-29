@@ -53,15 +53,23 @@ final class HTMLBuilderTests: XCTestCase {
         let img = Element.image(Self.testURL)
         XCTAssertEqual(img.renderHTML(), "<img src=\"\(Self.testURL.absoluteString)\">")
     }
-    func testClass() {
+    func testClassModifier() {
         let div = Element.division {
         }.class("myClass")
         XCTAssertEqual(div.renderHTML(), "<div class=\"myClass\"></div>")
     }
-    func testIdentifier() {
+    func testIdentifierModifier() {
         let div = Element.division {
         }.identifier("myId")
         XCTAssertEqual(div.renderHTML(), "<div id=\"myId\"></div>")
+    }
+    func testAttributesModifier() {
+        let div = Element.division {
+        }.attributes {
+            $0[.relationship] = "hello"
+            $0[.source] = "world"
+        }
+        XCTAssertEqual(div.renderHTML(), "<div rel=\"hello\" src=\"world\"></div>")
     }
     func testHTMLRendering() {
         let html = Element.html(head: {
@@ -204,8 +212,9 @@ final class HTMLBuilderTests: XCTestCase {
         ("testIf", testIf),
         ("testIfElse", testIfElse),
         ("testSingleTag", testSingleTag),
-        ("testClass", testClass),
-        ("testIdentifier", testIdentifier),
+        ("testClassModifier", testClassModifier),
+        ("testIdentifierModifier", testIdentifierModifier),
+        ("testAttributesModifier", testAttributesModifier),
         ("testHTMLRendering", testHTMLRendering),
         ("testCharacterEscaping", testCharacterEscaping),
         ("testRawHTML", testRawHTML),

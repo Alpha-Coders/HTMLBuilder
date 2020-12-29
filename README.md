@@ -69,7 +69,7 @@ Will output:
 ## Modifiers
 
 `Element` is modifiable while building the tree. 
-There is 2 built in modifiers, `identifier` and `class`
+There is 3 built-in modifiers, `identifier`,  `class` and `attributes`
 
 ```swift
 let modifierTree = Element.division {
@@ -83,6 +83,20 @@ Will output:
 <div class="container"><p id="title">Hello world</p></div>
 ```
 
+`attributes` takes a closure with `inout` attributes that you can modify:
+
+```swift
+let div = Element.division {
+}.attributes {
+    $0[.relationship] = "hello"
+    $0[.source] = "world"
+}
+print(div.renderHTML())
+```
+Will output:
+```html
+<div rel="hello" src="world"></div>
+```
 ## Raw HTML
 You can include raw html in the tree with `RawHTML` 
 ```swift
